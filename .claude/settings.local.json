@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test *)",
+      "Bash(robocopy C:\\\\Projects\\\\MortgagePayment\\\\www *)",
+      "PowerShell(robocopy \"C:\\\\Projects\\\\MortgagePayment\\\\www\" \"C:\\\\Projects\\\\StockAnalysis\\\\www\\\\mortgage\" /MIR)",
+      "Skill(budget26)",
+      "PowerShell(robocopy \"C:\\\\Projects\\\\MortgagePayment\\\\www\" \"C:\\\\Projects\\\\StockAnalysis\\\\www\\\\mortgage\" /E /PURGE /NJH /NJS /NFL /NDL)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
+    ]
+  }
+}

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="description" content="Calculate mortgage repayments, total interest, and see how an offset account or extra payments shorten your loan.">
+  <title>Mortgage Calculator — KashVector</title>
+  <link rel="icon" type="image/svg+xml" href="../mortgage-icon.svg">
+  <script src="/kv-theme.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="app-header">
+  <a class="home-logo" href="../" aria-label="All KashVector tools">
+    <img src="../logo.svg" alt="KashVector" width="32" height="32">
+    <span class="home-logo-label">← All tools</span>
+  </a>
+  <div class="app-header-center">
+    <h1><img src="../mortgage-icon.svg" alt="" width="32" height="32" style="vertical-align:middle;margin-right:8px;border-radius:6px"> Mortgage Calculator</h1>
+    <p>Calculate repayments, total interest, and the impact of offset accounts and extra repayments.</p>
+    <div class="header-concepts">
+      <span class="concept-pill">P&amp;I &amp; Interest Only</span>
+      <span class="concept-pill">Offset Account</span>
+      <span class="concept-pill">Extra Repayments</span>
+      <span class="concept-pill">Frequency Comparison</span>
+    </div>
+  </div>
+  <button class="theme-toggle" onclick="window.kvTheme.toggle()" aria-label="Toggle theme"></button>
+</header>
+
+<main>
+  <div class="layout">
+
+    <!-- ── Left panel: Inputs ── -->
+    <aside class="input-panel">
+
+      <div class="input-group">
+        <p class="group-title">Loan Details</p>
+
+        <div class="field">
+          <label for="loanAmount">Loan Amount</label>
+          <div class="input-wrap">
+            <span class="currency-prefix">$</span>
+            <input class="money-input" type="text" inputmode="numeric" id="loanAmount" value="600,000" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="annualRate">Interest Rate (p.a.)</label>
+          <div class="input-wrap">
+            <input class="num-input pct-input" type="number" id="annualRate" value="6.0" min="0" max="30" step="0.1">
+            <span class="pct-suffix">%</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="loanTermYears">Loan Term</label>
+          <div class="input-wrap">
+            <input class="num-input" type="number" id="loanTermYears" value="30" min="1" max="40" step="1">
+            <span class="unit-suffix">yrs</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="frequencySelect">Repayment Frequency</label>
+          <select class="freq-select" id="frequencySelect">
+            <option value="monthly" selected>Monthly</option>
+            <option value="fortnightly">Fortnightly</option>
+            <option value="weekly">Weekly</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Loan Type</label>
+          <div class="toggle-group" id="loanTypeToggle">
+            <button class="toggle-btn active" data-val="pi">P&amp;I</button>
+            <button class="toggle-btn" data-val="io">Interest Only</button>
+          </div>
+        </div>
+
+        <div class="field io-period-field" id="ioPeriodField">
+          <label for="ioPeriodYears">Interest-Only Period</label>
+          <div class="input-wrap">
+            <input class="num-input" type="number" id="ioPeriodYears" value="5" min="1" max="15" step="1">
+            <span class="unit-suffix">yrs</span>
+          </div>
+        </div>
+
+        <p class="derived" id="repaymentDerived"></p>
+      </div>
+
+      <div class="input-group">
+        <p class="group-title">Offset &amp; Extra Repayments</p>
+
+        <div class="field">
+          <label for="offsetBalance">
+            Offset Balance
+            <span class="tip" data-tip="Your offset account balance. Interest is calculated on (loan balance − offset). This reduces interest but does not reduce the loan balance itself.">?</span>
+          </label>
+          <div class="input-wrap">
+            <span class="currency-prefix">$</span>
+            <input class="money-input" type="text" inputmode="numeric" id="offsetBalance" value="0" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="extraPerPeriod">
+            Extra Repayment per Period
+            <span class="tip" data-tip="Additional amount paid above the minimum each period. Reduces the principal faster and shortens the loan.">?</span>
+          </label>
+          <div class="input-wrap">
+            <span class="currency-prefix">$</span>
+            <input class="money-input" type="text" inputmode="numeric" id="extraPerPeriod" value="0" autocomplete="off">
+          </div>
+        </div>
+
+        <p class="derived-savings hidden" id="savingsDerived"></p>
+      </div>
+
+    </aside>
+
+    <!-- ── Right panel: Results ── -->
+    <section class="results-panel">
+
+      <div class="cards" id="summaryCards">
+        <div class="card summary-card">
+          <p class="card-label" id="repaymentLabel">Monthly Repayment</p>
+          <p class="card-value" id="repaymentValue">—</p>
+          <p class="card-sub" id="repaymentSub"></p>
+        </div>
+        <div class="card summary-card">
+          <p class="card-label">Total Interest</p>
+          <p class="card-value" id="totalInterestValue">—</p>
+          <p class="card-sub" id="totalInterestSub"></p>
+        </div>
+        <div class="card summary-card">
+          <p class="card-label">Total Amount Paid</p>
+          <p class="card-value" id="totalPaidValue">—</p>
+          <p class="card-sub" id="totalPaidSub"></p>
+        </div>
+        <div class="card summary-card">
+          <p class="card-label">Loan Paid Off In</p>
+          <p class="card-value" id="paidOffValue">—</p>
+          <p class="card-sub" id="paidOffSub"></p>
+        </div>
+      </div>
+
+      <div class="card savings-banner hidden" id="savingsBanner">
+        <div class="save-item">
+          <p class="save-label">Interest Saved</p>
+          <p class="save-value" id="interestSavedValue">—</p>
+        </div>
+        <div class="save-item">
+          <p class="save-label">Time Saved</p>
+          <p class="save-value" id="timeSavedValue">—</p>
+        </div>
+      </div>
+
+      <div class="card" id="freqCard">
+        <p class="card-title">Repayment Frequency Comparison</p>
+        <table class="freq-table">
+          <thead>
+            <tr>
+              <th>Frequency</th>
+              <th>Repayment</th>
+              <th>Total Interest</th>
+              <th>Total Paid</th>
+              <th>Interest Saved</th>
+              <th>Time Saved</th>
+            </tr>
+          </thead>
+          <tbody id="freqBody"></tbody>
+        </table>
+      </div>
+
+      <div class="card chart-card">
+        <p class="card-title">Loan Balance Over Time</p>
+        <canvas id="mortgageChart"></canvas>
+      </div>
+
+      <details class="card" id="scheduleDetails">
+        <summary><span class="card-title">Amortisation Schedule</span></summary>
+        <div class="table-wrap">
+          <table class="schedule-table">
+            <thead>
+              <tr>
+                <th>Period</th>
+                <th>Payment</th>
+                <th>Interest</th>
+                <th>Principal</th>
+                <th>Balance</th>
+              </tr>
+            </thead>
+            <tbody id="scheduleBody"></tbody>
+          </table>
+          <p class="schedule-note" id="scheduleNote"></p>
+        </div>
+      </details>
+
+    </section>
+  </div>
+</main>
+
+<section class="tool-info">
+  <div class="tool-about">
+    <h2>About this tool</h2>
+    <p>Enter your loan amount, interest rate, and term to see your repayment, total interest, and the full amortisation schedule. Switch between Principal &amp; Interest and Interest Only to compare strategies.</p>
+    <p>Add an offset account balance or extra repayments to see exactly how much interest you save and how many years you shave off the loan. The frequency comparison table shows the benefit of paying weekly or fortnightly versus monthly.</p>
+    <p>All calculations run locally in your browser. No data is sent to any server.</p>
+  </div>
+  <div class="tool-faq">
+    <h2>Frequently asked questions</h2>
+    <details class="faq-item">
+      <summary>How is my repayment calculated?</summary>
+      <p>Your repayment uses the standard amortisation formula: <code>P × r × (1+r)ⁿ / ((1+r)ⁿ − 1)</code>, where P is the loan balance, r is the per-period interest rate, and n is the total number of periods. For a 30-year loan at 6% paid monthly, that's r = 0.06/12 and n = 360.</p>
+    </details>
+    <details class="faq-item">
+      <summary>What is an offset account and how does it work?</summary>
+      <p>An offset account is a transaction account linked to your mortgage. The balance in it reduces the principal on which interest is calculated each period — so a $500,000 loan with a $50,000 offset accrues interest on only $450,000. The loan balance itself is unchanged; you're just reducing the effective amount on which interest compounds.</p>
+    </details>
+    <details class="faq-item">
+      <summary>Does paying fortnightly or weekly actually save money?</summary>
+      <p>Yes — but the saving comes from making the equivalent of 13 monthly payments a year rather than 12. A fortnightly repayment is half the monthly amount, paid 26 times, which totals one extra monthly payment annually. That extra principal reduces the balance sooner, cutting total interest. The frequency comparison table shows exactly how much you save and how many years earlier you pay off.</p>
+    </details>
+    <details class="faq-item">
+      <summary>How do extra repayments reduce my loan?</summary>
+      <p>Any amount above the minimum repayment goes directly to reducing the principal. Because future interest is calculated on a lower balance, you pay less interest every subsequent period — and the effect compounds over time. Even a small extra amount each month can save tens of thousands in interest over a 30-year loan.</p>
+    </details>
+    <details class="faq-item">
+      <summary>When does interest-only make sense?</summary>
+      <p>Interest-only loans are common for investment properties where the investor wants to maximise cash flow or tax deductions in the short term. During the IO period you pay no principal, so the balance doesn't decrease — once the IO period ends, your P&amp;I repayments are recalculated on the full original balance over the remaining term, meaning they'll be higher than if you'd been repaying principal all along.</p>
+    </details>
+    <details class="faq-item">
+      <summary>Is this calculator free? Does it store my data?</summary>
+      <p>Yes, it's free with no sign-up required. Your inputs are saved only in your browser's localStorage so the calculator remembers them between visits. Nothing is sent to any server.</p>
+    </details>
+  </div>
+</section>
+
+<footer>
+  <span>Not financial advice. Calculations use a simple interest per-period model.</span>
+  <a href="../">← All KashVector tools</a>
+</footer>
+
+<script src="utils.js"></script>
+<script src="calc/mortgage.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
