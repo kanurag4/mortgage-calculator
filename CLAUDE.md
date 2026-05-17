@@ -75,10 +75,14 @@ Table uses P&I, no extra repayments, but respects the offset balance. "Time save
 npm test
 ```
 
+## Source Repository
+
+`github.com/kanurag4/mortgage-calculator`
+
 ## Deployment
 
 1. `npm test` — all tests must pass
 2. Copy `www/` → `C:\Projects\StockAnalysis\www\mortgage\`
-3. Add tool card to `C:\Projects\StockAnalysis\www\index.html`
-4. Copy `mortgage.png` icon to `C:\Projects\StockAnalysis\www\`
-5. Push `C:\Projects\StockAnalysis` → Cloudflare Pages auto-deploys to `kashvector.com/mortgage/`
+3. Push `C:\Projects\StockAnalysis` → Cloudflare Pages auto-deploys to `kashvector.com/mortgage/`
+
+Steps 3 and 4 from the original setup (hub card + icon) are already done — do not repeat.
