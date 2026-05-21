@@ -4,11 +4,17 @@ const $ = id => document.getElementById(id);
 
 const STORAGE_KEY = 'kv_mortgage_inputs';
 
+const STAMP_DUTY_RATES = {
+  NSW: 0.039, VIC: 0.052, QLD: 0.035, SA: 0.040,
+  WA:  0.035, TAS: 0.035, ACT: 0.035, NT: 0.045,
+};
+
 const DEFAULTS = {
   inputMode:     'loan',
   loanAmount:    '600,000',
   propertyPrice: '800,000',
   depositAmount: '160,000',
+  propertyState: 'NSW',
   includeLMI:    true,
   annualRate:    6.0,
   loanTermYears: 30,
@@ -27,6 +33,11 @@ const els = {
   // Purchase inputs
   propertyPrice:       $('propertyPrice'),
   depositAmount:       $('depositAmount'),
+  propertyState:       $('propertyState'),
+  stampDuty:           $('stampDuty'),
+  stampAutoTag:        $('stampAutoTag'),
+  stampResetBtn:       $('stampResetBtn'),
+  netDepositDerived:   $('netDepositDerived'),
   lvrDerived:          $('lvrDerived'),
   lmiRow:              $('lmiRow'),
   includeLMI:          $('includeLMI'),
@@ -69,8 +80,9 @@ const els = {
   stressFreqLabel:     $('stressFreqLabel'),
 };
 
-let loanType  = 'pi';
-let inputMode = 'loan';
+let loanType    = 'pi';
+let inputMode   = 'loan';
+let stampManual = false;
 let mortgageChart = null;
 let debounceTimer = null;
 
@@ -87,6 +99,9 @@ function saveToStorage() {
       loanAmount:     els.loanAmount.value,
       propertyPrice:  els.propertyPrice.value,
       depositAmount:  els.depositAmount.value,
+      propertyState:  els.propertyState.value,
+      stampDuty:      els.stampDuty.value,
+      stampManual,
       includeLMI:     els.includeLMI.checked,
       annualRate:     els.annualRate.value,
       loanTermYears:  els.loanTermYears.value,
@@ -103,13 +118,22 @@ function loadFromStorage() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
     if (!saved) return;
+    if (saved.loanAmount)    els.loanAmount.value    = saved.loanAmount;
+    if (saved.propertyPrice) els.propertyPrice.value = saved.propertyPrice;
+    if (saved.depositAmount) els.depositAmount.value = saved.depositAmount;
+    if (saved.propertyState) els.propertyState.value = saved.propertyState;
     if (saved.inputMode === 'purchase' || saved.inputMode === 'loan') {
       inputMode = saved.inputMode;
       applyInputMode();
     }
-    if (saved.loanAmount)    els.loanAmount.value    = saved.loanAmount;
-    if (saved.propertyPrice) els.propertyPrice.value = saved.propertyPrice;
-    if (saved.depositAmount) els.depositAmount.value = saved.depositAmount;
+    if (saved.stampManual && saved.stampDuty) {
+      stampManual = true;
+      els.stampDuty.value = saved.stampDuty;
+      els.stampAutoTag.style.display  = 'none';
+      els.stampResetBtn.style.display = '';
+    } else {
+      stampManual = false;
+    }
     if (typeof saved.includeLMI === 'boolean') els.includeLMI.checked = saved.includeLMI;
     if (saved.annualRate)    els.annualRate.value     = saved.annualRate;
     if (saved.loanTermYears) els.loanTermYears.value  = saved.loanTermYears;
@@ -127,6 +151,33 @@ function loadFromStorage() {
   } catch (_) {}
 }
 
+// ── Stamp duty auto-calc ──────────────────────────────────────────────────────
+
+function autoCalcStampDuty() {
+  if (stampManual) return;
+  const price = parseMoney(els.propertyPrice);
+  const rate  = STAMP_DUTY_RATES[els.propertyState.value] || 0.04;
+  els.stampDuty.value = price > 0 ? Math.round(price * rate).toLocaleString('en-AU') : '';
+}
+
+function onStampInput() {
+  formatMoneyInput(els.stampDuty);
+  stampManual = true;
+  els.stampAutoTag.style.display  = 'none';
+  els.stampResetBtn.style.display = '';
+  saveToStorage();
+  scheduleRender();
+}
+
+function onResetStamp() {
+  stampManual = false;
+  els.stampAutoTag.style.display  = '';
+  els.stampResetBtn.style.display = 'none';
+  autoCalcStampDuty();
+  saveToStorage();
+  scheduleRender();
+}
+
 // ── Input mode ────────────────────────────────────────────────────────────────
 
 function applyInputMode() {
@@ -136,18 +187,35 @@ function applyInputMode() {
   document.querySelectorAll('#inputModeToggle .toggle-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.val === inputMode);
   });
+  if (isPurchase) autoCalcStampDuty();
 }
 
 // ── Events ────────────────────────────────────────────────────────────────────
 
 function bindEvents() {
-  [els.loanAmount, els.offsetBalance, els.extraPerPeriod, els.propertyPrice, els.depositAmount].forEach(el => {
+  [els.loanAmount, els.offsetBalance, els.extraPerPeriod, els.depositAmount].forEach(el => {
     el.addEventListener('input', () => {
       formatMoneyInput(el);
       saveToStorage();
       scheduleRender();
     });
   });
+
+  els.propertyPrice.addEventListener('input', () => {
+    formatMoneyInput(els.propertyPrice);
+    autoCalcStampDuty();
+    saveToStorage();
+    scheduleRender();
+  });
+
+  els.propertyState.addEventListener('change', () => {
+    autoCalcStampDuty();
+    saveToStorage();
+    scheduleRender();
+  });
+
+  els.stampDuty.addEventListener('input', onStampInput);
+  els.stampResetBtn.addEventListener('click', onResetStamp);
 
   [els.annualRate, els.loanTermYears, els.ioPeriodYears].forEach(el => {
     el.addEventListener('input', () => {
@@ -203,7 +271,9 @@ function getInputs() {
   if (inputMode === 'purchase') {
     const propertyPrice = parseMoney(els.propertyPrice);
     const deposit       = parseMoney(els.depositAmount);
-    const baseLoan      = Math.max(propertyPrice - deposit, 0);
+    const stampDutyAmt  = parseMoney(els.stampDuty);
+    const netDeposit    = Math.max(deposit - stampDutyAmt, 0);
+    const baseLoan      = Math.max(propertyPrice - netDeposit, 0);
     const lmiAmt        = baseLoan > 0 && propertyPrice > 0 && els.includeLMI.checked
       ? estimateLMI(baseLoan, propertyPrice)
       : 0;
@@ -254,15 +324,26 @@ function renderPurchaseMode() {
 
   const propertyPrice = parseMoney(els.propertyPrice);
   const deposit       = parseMoney(els.depositAmount);
+  const stampDutyAmt  = parseMoney(els.stampDuty);
+  const netDeposit    = Math.max(deposit - stampDutyAmt, 0);
 
   if (!propertyPrice || propertyPrice <= 0) {
-    els.lvrDerived.textContent       = '';
+    els.netDepositDerived.textContent   = '';
+    els.lvrDerived.textContent          = '';
     els.purchaseLoanDerived.textContent = '';
     els.lmiRow.classList.add('hidden');
     return;
   }
 
-  const baseLoan    = Math.max(propertyPrice - deposit, 0);
+  if (stampDutyAmt > 0) {
+    els.netDepositDerived.textContent = stampDutyAmt >= deposit
+      ? `Stamp duty (${formatCurrency(stampDutyAmt)}) exceeds deposit — net deposit: ${formatCurrency(netDeposit)}`
+      : `Net deposit after stamp duty: ${formatCurrency(netDeposit)}`;
+  } else {
+    els.netDepositDerived.textContent = '';
+  }
+
+  const baseLoan    = Math.max(propertyPrice - netDeposit, 0);
   const lvr         = (baseLoan / propertyPrice) * 100;
   const lmiAmt      = estimateLMI(baseLoan, propertyPrice);
   const lmiRequired = lmiAmt > 0;

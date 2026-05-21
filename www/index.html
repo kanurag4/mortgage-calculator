@@ -75,6 +75,32 @@
               <input class="money-input" type="text" inputmode="numeric" id="depositAmount" value="160,000" autocomplete="off">
             </div>
           </div>
+          <div class="field">
+            <label for="propertyState">State / Territory</label>
+            <select class="freq-select" id="propertyState">
+              <option value="NSW">NSW</option>
+              <option value="VIC">VIC</option>
+              <option value="QLD">QLD</option>
+              <option value="SA">SA</option>
+              <option value="WA">WA</option>
+              <option value="TAS">TAS</option>
+              <option value="ACT">ACT</option>
+              <option value="NT">NT</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="stampDuty">
+              Stamp Duty
+              <span class="auto-tag" id="stampAutoTag">auto</span>
+              <span class="tip" data-tip="Indicative flat rates by state (calibrated to ~$700k):&#10;  NSW 3.9%  VIC 5.2%  QLD 3.5%&#10;  SA  4.0%  WA  3.5%  TAS 3.5%&#10;  ACT 3.5%  NT  4.5%&#10;Actual stamp duty uses sliding-scale brackets and varies by property type, first-home buyer status, and concessions. Override manually for a precise figure.">?</span>
+            </label>
+            <div class="input-wrap">
+              <span class="currency-prefix">$</span>
+              <input class="money-input" type="text" inputmode="numeric" id="stampDuty" autocomplete="off">
+              <button class="reset-btn" id="stampResetBtn" title="Reset to auto" style="display:none">↺</button>
+            </div>
+          </div>
+          <p class="derived" id="netDepositDerived"></p>
           <p class="derived" id="lvrDerived"></p>
           <div id="lmiRow" class="lmi-row hidden">
             <label class="lmi-label" for="includeLMI">
@@ -273,7 +299,7 @@
 <section class="tool-info">
   <div class="tool-about">
     <h2>About this tool</h2>
-    <p>A free Australian mortgage calculator that shows your repayment, total interest, and full amortisation schedule. Enter a direct loan amount or switch to Property Purchase mode to derive the loan from your purchase price and deposit — including live LVR and an LMI estimate when your deposit is below 20%.</p>
+    <p>A free Australian mortgage calculator that shows your repayment, total interest, and full amortisation schedule. Enter a direct loan amount or switch to Property Purchase mode to derive the loan from your purchase price and deposit — including stamp duty by state, live LVR, and an LMI estimate when your net deposit is below 20%.</p>
     <p>Model the impact of an offset account, extra repayments, or a change in frequency (weekly, fortnightly, monthly) on your total interest and payoff date. The Rate Stress Test card shows what your repayments would look like at the current rate plus the APRA 3% serviceability buffer.</p>
     <p>All calculations run locally in your browser. No data is sent to any server.</p>
   </div>
@@ -284,8 +310,12 @@
       <p>Your repayment uses the standard amortisation formula: <code>P × r × (1+r)ⁿ / ((1+r)ⁿ − 1)</code>, where P is the loan balance, r is the per-period interest rate, and n is the total number of periods. For a 30-year loan at 6% paid monthly, r = 0.06/12 = 0.005 and n = 360.</p>
     </details>
     <details class="faq-item">
+      <summary>How is stamp duty calculated?</summary>
+      <p>The calculator uses indicative flat rates by state (NSW 3.9%, VIC 5.5%, QLD/WA/TAS/ACT 3.5%, SA 4.0%, NT 4.5%) applied to the purchase price. Real stamp duty uses sliding-scale brackets and varies by property type, first-home buyer concessions, and whether the property is a principal place of residence or investment. Override the field manually if you have a precise figure. Stamp duty is deducted from your deposit to show the net deposit available for the loan — if stamp duty exceeds your deposit, the loan is the full purchase price.</p>
+    </details>
+    <details class="faq-item">
       <summary>What is LVR and when do I need LMI?</summary>
-      <p>Loan-to-Value Ratio (LVR) is your loan amount divided by the property value, expressed as a percentage. When LVR exceeds 80% — meaning your deposit is less than 20% — most lenders require Lenders Mortgage Insurance (LMI). LMI protects the lender (not you) if you default. The premium is added to your loan and estimated here using indicative rates: 0.65% for 80–85% LVR, 1.27% for 85–90%, 2.43% for 90–95%, and 3.85% above 95%. Actual LMI varies by lender and insurer.</p>
+      <p>Loan-to-Value Ratio (LVR) is your loan amount divided by the property value, expressed as a percentage. When LVR exceeds 80% — meaning your net deposit (after stamp duty) is less than 20% — most lenders require Lenders Mortgage Insurance (LMI). LMI protects the lender (not you) if you default. The premium is added to your loan and estimated here using indicative rates: 0.65% for 80–85% LVR, 1.27% for 85–90%, 2.43% for 90–95%, and 3.85% above 95%. Actual LMI varies by lender and insurer.</p>
     </details>
     <details class="faq-item">
       <summary>What is the rate stress test?</summary>
