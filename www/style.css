@@ -109,6 +109,8 @@ html:not(.dark) {
   --kv-text:   #0f172a;
   --kv-muted:  #64748b;
   --kv-border: #e2e8f0;
+  --kv-accent: #0369a1;
+  --kv-warn:   #d97706;
 }
 
 /* ── Layout ── */
@@ -625,7 +627,7 @@ details.card > summary .card-title {
 html:not(.dark) .kv-tool-nav { background: #edf2f7; border-color: #e2e8f0; }
 html:not(.dark) .kv-tool-nav a { color: #64748b; }
 html:not(.dark) .kv-tool-nav a:hover { color: #0f172a; }
-html:not(.dark) .kv-tool-nav a.kv-nav-active { color: #0ea5e9; border-bottom-color: #0ea5e9; }
+html:not(.dark) .kv-tool-nav a.kv-nav-active { color: #0369a1; border-bottom-color: #0369a1; }
 @media (max-width: 800px) { .kv-tool-nav { justify-content: flex-start; } }
 
 /* ── Footer ── */
@@ -653,6 +655,113 @@ footer a:hover {
 /* ── Utilities ── */
 
 .hidden { display: none !important; }
+
+/* ── Print ── */
+
+/* ── Purchase mode fields ── */
+
+.purchase-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lmi-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lmi-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--kv-text);
+  cursor: pointer;
+}
+
+.lmi-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--kv-accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ── Rate stress test card ── */
+
+.stress-card {
+  background: rgba(245, 158, 11, 0.05);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.stress-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 4px;
+  margin-left: 6px;
+  vertical-align: middle;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: var(--kv-warn);
+  letter-spacing: 0.3px;
+}
+
+.stress-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 560px) {
+  .stress-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.stress-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--kv-muted);
+  margin-bottom: 4px;
+}
+
+.stress-repayment {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--kv-warn);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.stress-extra {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--kv-fail);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.stress-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--kv-text);
+  line-height: 1.1;
+}
+
+.stress-note {
+  font-size: 0.78rem;
+  color: var(--kv-muted);
+  line-height: 1.5;
+  border-top: 1px solid rgba(245, 158, 11, 0.15);
+  padding-top: 10px;
+  margin-top: 2px;
+}
 
 /* ── Print ── */
 

@@ -52,6 +52,42 @@
         <p class="group-title">Loan Details</p>
 
         <div class="field">
+          <label>Input Mode</label>
+          <div class="toggle-group" id="inputModeToggle">
+            <button class="toggle-btn active" data-val="loan">Loan Amount</button>
+            <button class="toggle-btn" data-val="purchase">Property Purchase</button>
+          </div>
+        </div>
+
+        <!-- Purchase mode fields (hidden by default) -->
+        <div id="purchaseFields" class="purchase-fields hidden">
+          <div class="field">
+            <label for="propertyPrice">Property Price</label>
+            <div class="input-wrap">
+              <span class="currency-prefix">$</span>
+              <input class="money-input" type="text" inputmode="numeric" id="propertyPrice" value="800,000" autocomplete="off">
+            </div>
+          </div>
+          <div class="field">
+            <label for="depositAmount">Your Deposit</label>
+            <div class="input-wrap">
+              <span class="currency-prefix">$</span>
+              <input class="money-input" type="text" inputmode="numeric" id="depositAmount" value="160,000" autocomplete="off">
+            </div>
+          </div>
+          <p class="derived" id="lvrDerived"></p>
+          <div id="lmiRow" class="lmi-row hidden">
+            <label class="lmi-label" for="includeLMI">
+              <input type="checkbox" id="includeLMI" checked>
+              Include LMI estimate in loan
+              <span class="tip" data-tip="Lenders Mortgage Insurance protects the lender when your deposit is below 20% (LVR > 80%). This is an indicative estimate — actual LMI varies by lender, insurer, and loan amount.">?</span>
+            </label>
+            <p class="derived" id="lmiAmountDerived"></p>
+          </div>
+          <p class="derived" id="purchaseLoanDerived"></p>
+        </div>
+
+        <div class="field" id="loanAmountField">
           <label for="loanAmount">Loan Amount</label>
           <div class="input-wrap">
             <span class="currency-prefix">$</span>
@@ -168,6 +204,25 @@
           <p class="save-label">Time Saved</p>
           <p class="save-value" id="timeSavedValue">—</p>
         </div>
+      </div>
+
+      <div class="card stress-card" id="stressCard">
+        <p class="card-title">Rate Stress Test <span class="stress-badge">+3%</span></p>
+        <div class="stress-grid">
+          <div class="stress-item">
+            <p class="stress-label">P&amp;I repayment at <span id="stressRateLabel">9.0%</span></p>
+            <p class="stress-repayment" id="stressRepaymentValue">—</p>
+          </div>
+          <div class="stress-item">
+            <p class="stress-label">Extra per <span id="stressFreqLabel">month</span></p>
+            <p class="stress-extra" id="stressExtraValue">—</p>
+          </div>
+          <div class="stress-item">
+            <p class="stress-label">Total interest at +3%</p>
+            <p class="stress-value" id="stressTotalInterest">—</p>
+          </div>
+        </div>
+        <p class="stress-note">APRA requires lenders to assess your ability to repay at +3% above the loan rate.</p>
       </div>
 
       <div class="card" id="freqCard">

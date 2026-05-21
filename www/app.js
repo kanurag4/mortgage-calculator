@@ -5,46 +5,72 @@ const $ = id => document.getElementById(id);
 const STORAGE_KEY = 'kv_mortgage_inputs';
 
 const DEFAULTS = {
-  loanAmount:     '600,000',
-  annualRate:     6.0,
-  loanTermYears:  30,
-  frequency:      'monthly',
-  loanType:       'pi',
-  ioPeriodYears:  5,
-  offsetBalance:  '0',
-  extraPerPeriod: '0',
+  inputMode:     'loan',
+  loanAmount:    '600,000',
+  propertyPrice: '800,000',
+  depositAmount: '160,000',
+  includeLMI:    true,
+  annualRate:    6.0,
+  loanTermYears: 30,
+  frequency:     'monthly',
+  loanType:      'pi',
+  ioPeriodYears: 5,
+  offsetBalance: '0',
+  extraPerPeriod:'0',
 };
 
 const els = {
-  loanAmount:       $('loanAmount'),
-  annualRate:       $('annualRate'),
-  loanTermYears:    $('loanTermYears'),
-  frequencySelect:  $('frequencySelect'),
-  ioPeriodField:    $('ioPeriodField'),
-  ioPeriodYears:    $('ioPeriodYears'),
-  offsetBalance:    $('offsetBalance'),
-  extraPerPeriod:   $('extraPerPeriod'),
-  repaymentDerived: $('repaymentDerived'),
-  savingsDerived:   $('savingsDerived'),
-  savingsBanner:    $('savingsBanner'),
-  freqBody:         $('freqBody'),
-  scheduleBody:     $('scheduleBody'),
-  scheduleNote:     $('scheduleNote'),
-  scheduleDetails:  $('scheduleDetails'),
-  repaymentLabel:   $('repaymentLabel'),
-  repaymentValue:   $('repaymentValue'),
-  repaymentSub:     $('repaymentSub'),
-  totalInterestValue: $('totalInterestValue'),
-  totalInterestSub:   $('totalInterestSub'),
-  totalPaidValue:   $('totalPaidValue'),
-  totalPaidSub:     $('totalPaidSub'),
-  paidOffValue:     $('paidOffValue'),
-  paidOffSub:       $('paidOffSub'),
-  interestSavedValue: $('interestSavedValue'),
-  timeSavedValue:   $('timeSavedValue'),
+  // Mode toggle
+  inputModeToggle:     $('inputModeToggle'),
+  purchaseFields:      $('purchaseFields'),
+  loanAmountField:     $('loanAmountField'),
+  // Purchase inputs
+  propertyPrice:       $('propertyPrice'),
+  depositAmount:       $('depositAmount'),
+  lvrDerived:          $('lvrDerived'),
+  lmiRow:              $('lmiRow'),
+  includeLMI:          $('includeLMI'),
+  lmiAmountDerived:    $('lmiAmountDerived'),
+  purchaseLoanDerived: $('purchaseLoanDerived'),
+  // Loan inputs
+  loanAmount:          $('loanAmount'),
+  annualRate:          $('annualRate'),
+  loanTermYears:       $('loanTermYears'),
+  frequencySelect:     $('frequencySelect'),
+  ioPeriodField:       $('ioPeriodField'),
+  ioPeriodYears:       $('ioPeriodYears'),
+  offsetBalance:       $('offsetBalance'),
+  extraPerPeriod:      $('extraPerPeriod'),
+  // Derived
+  repaymentDerived:    $('repaymentDerived'),
+  savingsDerived:      $('savingsDerived'),
+  // Results
+  savingsBanner:       $('savingsBanner'),
+  freqBody:            $('freqBody'),
+  scheduleBody:        $('scheduleBody'),
+  scheduleNote:        $('scheduleNote'),
+  scheduleDetails:     $('scheduleDetails'),
+  repaymentLabel:      $('repaymentLabel'),
+  repaymentValue:      $('repaymentValue'),
+  repaymentSub:        $('repaymentSub'),
+  totalInterestValue:  $('totalInterestValue'),
+  totalInterestSub:    $('totalInterestSub'),
+  totalPaidValue:      $('totalPaidValue'),
+  totalPaidSub:        $('totalPaidSub'),
+  paidOffValue:        $('paidOffValue'),
+  paidOffSub:          $('paidOffSub'),
+  interestSavedValue:  $('interestSavedValue'),
+  timeSavedValue:      $('timeSavedValue'),
+  // Stress test
+  stressRateLabel:     $('stressRateLabel'),
+  stressRepaymentValue:$('stressRepaymentValue'),
+  stressExtraValue:    $('stressExtraValue'),
+  stressTotalInterest: $('stressTotalInterest'),
+  stressFreqLabel:     $('stressFreqLabel'),
 };
 
-let loanType = 'pi';
+let loanType  = 'pi';
+let inputMode = 'loan';
 let mortgageChart = null;
 let debounceTimer = null;
 
@@ -57,13 +83,17 @@ renderResults();
 function saveToStorage() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      loanAmount:    els.loanAmount.value,
-      annualRate:    els.annualRate.value,
-      loanTermYears: els.loanTermYears.value,
-      frequency:     els.frequencySelect.value,
+      inputMode,
+      loanAmount:     els.loanAmount.value,
+      propertyPrice:  els.propertyPrice.value,
+      depositAmount:  els.depositAmount.value,
+      includeLMI:     els.includeLMI.checked,
+      annualRate:     els.annualRate.value,
+      loanTermYears:  els.loanTermYears.value,
+      frequency:      els.frequencySelect.value,
       loanType,
-      ioPeriodYears: els.ioPeriodYears.value,
-      offsetBalance: els.offsetBalance.value,
+      ioPeriodYears:  els.ioPeriodYears.value,
+      offsetBalance:  els.offsetBalance.value,
       extraPerPeriod: els.extraPerPeriod.value,
     }));
   } catch (_) {}
@@ -73,7 +103,14 @@ function loadFromStorage() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
     if (!saved) return;
+    if (saved.inputMode === 'purchase' || saved.inputMode === 'loan') {
+      inputMode = saved.inputMode;
+      applyInputMode();
+    }
     if (saved.loanAmount)    els.loanAmount.value    = saved.loanAmount;
+    if (saved.propertyPrice) els.propertyPrice.value = saved.propertyPrice;
+    if (saved.depositAmount) els.depositAmount.value = saved.depositAmount;
+    if (typeof saved.includeLMI === 'boolean') els.includeLMI.checked = saved.includeLMI;
     if (saved.annualRate)    els.annualRate.value     = saved.annualRate;
     if (saved.loanTermYears) els.loanTermYears.value  = saved.loanTermYears;
     if (saved.frequency)     els.frequencySelect.value = saved.frequency;
@@ -82,7 +119,7 @@ function loadFromStorage() {
     if (saved.extraPerPeriod) els.extraPerPeriod.value = saved.extraPerPeriod;
     if (saved.loanType && (saved.loanType === 'pi' || saved.loanType === 'io')) {
       loanType = saved.loanType;
-      document.querySelectorAll('.toggle-btn').forEach(btn => {
+      document.querySelectorAll('#loanTypeToggle .toggle-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.val === loanType);
       });
       els.ioPeriodField.classList.toggle('visible', loanType === 'io');
@@ -90,10 +127,21 @@ function loadFromStorage() {
   } catch (_) {}
 }
 
+// ── Input mode ────────────────────────────────────────────────────────────────
+
+function applyInputMode() {
+  const isPurchase = inputMode === 'purchase';
+  els.purchaseFields.classList.toggle('hidden', !isPurchase);
+  els.loanAmountField.classList.toggle('hidden', isPurchase);
+  document.querySelectorAll('#inputModeToggle .toggle-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.val === inputMode);
+  });
+}
+
 // ── Events ────────────────────────────────────────────────────────────────────
 
 function bindEvents() {
-  [els.loanAmount, els.offsetBalance, els.extraPerPeriod].forEach(el => {
+  [els.loanAmount, els.offsetBalance, els.extraPerPeriod, els.propertyPrice, els.depositAmount].forEach(el => {
     el.addEventListener('input', () => {
       formatMoneyInput(el);
       saveToStorage();
@@ -113,9 +161,23 @@ function bindEvents() {
     scheduleRender();
   });
 
-  document.querySelectorAll('.toggle-btn').forEach(btn => {
+  els.includeLMI.addEventListener('change', () => {
+    saveToStorage();
+    scheduleRender();
+  });
+
+  document.querySelectorAll('#inputModeToggle .toggle-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+      inputMode = btn.dataset.val;
+      applyInputMode();
+      saveToStorage();
+      scheduleRender();
+    });
+  });
+
+  document.querySelectorAll('#loanTypeToggle .toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#loanTypeToggle .toggle-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       loanType = btn.dataset.val;
       els.ioPeriodField.classList.toggle('visible', loanType === 'io');
@@ -137,12 +199,24 @@ function scheduleRender() {
 // ── Read inputs ───────────────────────────────────────────────────────────────
 
 function getInputs() {
-  const principal = parseMoney(els.loanAmount);
-  const annualRate = parseFloat(els.annualRate.value) / 100 || 0;
-  const years = parseInt(els.loanTermYears.value, 10) || 30;
-  const frequency = els.frequencySelect.value;
-  const ioPeriodYears = loanType === 'io' ? Math.min(parseInt(els.ioPeriodYears.value, 10) || 0, years) : 0;
-  const offsetBalance = parseMoney(els.offsetBalance);
+  let principal;
+  if (inputMode === 'purchase') {
+    const propertyPrice = parseMoney(els.propertyPrice);
+    const deposit       = parseMoney(els.depositAmount);
+    const baseLoan      = Math.max(propertyPrice - deposit, 0);
+    const lmiAmt        = baseLoan > 0 && propertyPrice > 0 && els.includeLMI.checked
+      ? estimateLMI(baseLoan, propertyPrice)
+      : 0;
+    principal = baseLoan + lmiAmt;
+  } else {
+    principal = parseMoney(els.loanAmount);
+  }
+
+  const annualRate     = parseFloat(els.annualRate.value) / 100 || 0;
+  const years          = parseInt(els.loanTermYears.value, 10) || 30;
+  const frequency      = els.frequencySelect.value;
+  const ioPeriodYears  = loanType === 'io' ? Math.min(parseInt(els.ioPeriodYears.value, 10) || 0, years) : 0;
+  const offsetBalance  = parseMoney(els.offsetBalance);
   const extraPerPeriod = parseMoney(els.extraPerPeriod);
   return { principal, annualRate, years, frequency, loanType, ioPeriodYears, offsetBalance, extraPerPeriod };
 }
@@ -151,6 +225,7 @@ function getInputs() {
 
 function renderResults() {
   const inputs = getInputs();
+  renderPurchaseMode();
   if (!inputs.principal || inputs.principal <= 0 || inputs.years <= 0) return;
 
   const schedule   = buildSchedule(inputs);
@@ -166,15 +241,73 @@ function renderResults() {
   renderSummaryCards(inputs, summary, baseline);
   renderSavingsBanner(summary, baseline, inputs);
   renderSavingsDerived(summary, baseline, inputs);
+  renderStressTest(inputs);
   renderFrequencyTable(freqRows, inputs.frequency);
   renderChart(yearlyData);
   renderScheduleTable(schedule, inputs.frequency);
 }
 
+// ── Purchase mode derived display ─────────────────────────────────────────────
+
+function renderPurchaseMode() {
+  if (inputMode !== 'purchase') return;
+
+  const propertyPrice = parseMoney(els.propertyPrice);
+  const deposit       = parseMoney(els.depositAmount);
+
+  if (!propertyPrice || propertyPrice <= 0) {
+    els.lvrDerived.textContent       = '';
+    els.purchaseLoanDerived.textContent = '';
+    els.lmiRow.classList.add('hidden');
+    return;
+  }
+
+  const baseLoan    = Math.max(propertyPrice - deposit, 0);
+  const lvr         = (baseLoan / propertyPrice) * 100;
+  const lmiAmt      = estimateLMI(baseLoan, propertyPrice);
+  const lmiRequired = lmiAmt > 0;
+
+  els.lvrDerived.textContent = `LVR: ${lvr.toFixed(1)}%${!lmiRequired ? '  ·  No LMI required' : ''}`;
+
+  if (lmiRequired) {
+    els.lmiRow.classList.remove('hidden');
+    const included = els.includeLMI.checked;
+    els.lmiAmountDerived.textContent = `Estimated LMI: ~${formatCurrency(lmiAmt)}${included ? ' (added to loan)' : ' (not included)'}`;
+    const totalLoan = baseLoan + (included ? lmiAmt : 0);
+    els.purchaseLoanDerived.textContent = `Loan amount: ${formatCurrency(totalLoan)}`;
+  } else {
+    els.lmiRow.classList.add('hidden');
+    els.purchaseLoanDerived.textContent = `Loan amount: ${formatCurrency(baseLoan)}`;
+  }
+}
+
+// ── Rate stress test ──────────────────────────────────────────────────────────
+
+function renderStressTest(inputs) {
+  const stressRate  = inputs.annualRate + 0.03;
+  const freqLabel   = { monthly: 'month', fortnightly: 'fortnight', weekly: 'week' }[inputs.frequency];
+
+  const effectivePrincipal = Math.max(inputs.principal - inputs.offsetBalance, 0);
+  const baseAmt = inputs.loanType === 'io'
+    ? interestOnlyRepayment(effectivePrincipal, inputs.annualRate, inputs.frequency)
+    : repaymentAmount(inputs.principal, inputs.annualRate, inputs.years, inputs.frequency);
+  const stressAmt  = repaymentAmount(inputs.principal, stressRate, inputs.years, inputs.frequency);
+  const extra      = stressAmt - baseAmt;
+
+  const stressSchedule = buildSchedule({ ...inputs, annualRate: stressRate, loanType: 'pi', ioPeriodYears: 0 });
+  const stressSummary  = computeSummary(stressSchedule, inputs.principal);
+
+  els.stressRateLabel.textContent      = (stressRate * 100).toFixed(1) + '%';
+  els.stressRepaymentValue.textContent = formatCurrency(stressAmt) + ' / ' + freqLabel;
+  els.stressExtraValue.textContent     = '+' + formatCurrency(extra) + ' / ' + freqLabel;
+  els.stressTotalInterest.textContent  = formatCurrency(stressSummary.totalInterest);
+  els.stressFreqLabel.textContent      = freqLabel;
+}
+
 // ── Derived repayment text (below inputs) ─────────────────────────────────────
 
 function renderRepaymentDerived(inputs) {
-  const { principal, annualRate, years, frequency, loanType, ioPeriodYears } = inputs;
+  const { principal, annualRate, years, frequency, loanType, ioPeriodYears, offsetBalance } = inputs;
   const freqLabel = { monthly: 'month', fortnightly: 'fortnight', weekly: 'week' }[frequency];
 
   if (loanType === 'io') {
@@ -204,7 +337,6 @@ function renderSummaryCards(inputs, summary, baseline) {
   const { frequency, loanType } = inputs;
   const freqLabel = { monthly: '/ month', fortnightly: '/ fortnight', weekly: '/ week' }[frequency];
 
-  // Card 1: Repayment
   els.repaymentLabel.textContent = `${capitalize(frequency)} Repayment`;
   if (loanType === 'io') {
     const effectivePrincipal = Math.max(inputs.principal - inputs.offsetBalance, 0);
@@ -219,29 +351,24 @@ function renderSummaryCards(inputs, summary, baseline) {
       : freqLabel;
   }
 
-  // Card 2: Total interest
   els.totalInterestValue.textContent = formatCurrency(summary.totalInterest);
   const interestPct = inputs.principal > 0
     ? ((summary.totalInterest / inputs.principal) * 100).toFixed(0)
     : 0;
   els.totalInterestSub.textContent = `${interestPct}% of loan amount`;
 
-  // Card 3: Total paid
   els.totalPaidValue.textContent = formatCurrency(summary.totalPaid);
-  els.totalPaidSub.textContent = `principal + interest`;
+  els.totalPaidSub.textContent   = `principal + interest`;
 
-  // Card 4: Paid off in
   if (summary.paidOff) {
     els.paidOffValue.textContent = formatDuration(summary.periodsActual, frequency);
     const baselineDuration = formatDuration(baseline.periodsActual, frequency);
-    if (summary.periodsActual < baseline.periodsActual) {
-      els.paidOffSub.textContent = `vs ${baselineDuration} (no offset/extra)`;
-    } else {
-      els.paidOffSub.textContent = `${inputs.years}-year loan term`;
-    }
+    els.paidOffSub.textContent = summary.periodsActual < baseline.periodsActual
+      ? `vs ${baselineDuration} (no offset/extra)`
+      : `${inputs.years}-year loan term`;
   } else {
     els.paidOffValue.textContent = 'Not paid off';
-    els.paidOffSub.textContent = `${formatCurrency(summary.remainingBalance)} outstanding at term end`;
+    els.paidOffSub.textContent   = `${formatCurrency(summary.remainingBalance)} outstanding at term end`;
   }
 }
 
@@ -249,24 +376,17 @@ function renderSummaryCards(inputs, summary, baseline) {
 
 function renderSavingsBanner(summary, baseline, inputs) {
   const hasBoost = inputs.offsetBalance > 0 || inputs.extraPerPeriod > 0;
-  if (!hasBoost) {
-    els.savingsBanner.classList.add('hidden');
-    return;
-  }
-  const interestSaved = baseline.totalInterest - summary.totalInterest;
-  const periodsSaved = baseline.periodsActual - summary.periodsActual;
+  if (!hasBoost) { els.savingsBanner.classList.add('hidden'); return; }
 
-  if (interestSaved <= 0) {
-    els.savingsBanner.classList.add('hidden');
-    return;
-  }
+  const interestSaved = baseline.totalInterest - summary.totalInterest;
+  if (interestSaved <= 0) { els.savingsBanner.classList.add('hidden'); return; }
 
   els.savingsBanner.classList.remove('hidden');
   els.interestSavedValue.textContent = formatCurrency(interestSaved);
-  els.timeSavedValue.textContent = formatDuration(Math.max(0, periodsSaved), inputs.frequency);
+  els.timeSavedValue.textContent = formatDuration(Math.max(0, baseline.periodsActual - summary.periodsActual), inputs.frequency);
 }
 
-// ── Savings derived text (below extra repayment input) ────────────────────────
+// ── Savings derived text ──────────────────────────────────────────────────────
 
 function renderSavingsDerived(summary, baseline, inputs) {
   const hasBoost = inputs.offsetBalance > 0 || inputs.extraPerPeriod > 0;
@@ -276,10 +396,7 @@ function renderSavingsDerived(summary, baseline, inputs) {
     return;
   }
   const saved = baseline.totalInterest - summary.totalInterest;
-  if (saved <= 0) {
-    els.savingsDerived.classList.add('hidden');
-    return;
-  }
+  if (saved <= 0) { els.savingsDerived.classList.add('hidden'); return; }
   els.savingsDerived.classList.remove('hidden');
   els.savingsDerived.textContent =
     `Saves ${formatCurrency(saved)} interest · ${formatDuration(Math.max(0, baseline.periodsActual - summary.periodsActual), inputs.frequency)} sooner`;
@@ -288,10 +405,7 @@ function renderSavingsDerived(summary, baseline, inputs) {
 // ── Frequency table ───────────────────────────────────────────────────────────
 
 function renderFrequencyTable(rows, selectedFreq) {
-  // rows order from frequencyComparison: [monthly, fortnightly, weekly]
-  const monthlyRow = rows.find(r => r.frequency === 'monthly');
-
-  // monthlyRow.periods is a count of monthly periods, which equals months.
+  const monthlyRow   = rows.find(r => r.frequency === 'monthly');
   const monthlyMonths = monthlyRow ? monthlyRow.periods : 0;
 
   els.freqBody.innerHTML = rows.map(row => {
@@ -300,12 +414,11 @@ function renderFrequencyTable(rows, selectedFreq) {
       ? monthlyRow.totalInterest - row.totalInterest
       : null;
     const interestSavedStr = interestSaved !== null && interestSaved > 0
-      ? `${formatCurrency(interestSaved)}`
+      ? formatCurrency(interestSaved)
       : '—';
-    // Time saved vs monthly: convert both to months then diff.
-    const rowMonths = row.periods * 12 / PERIODS[row.frequency];
+    const rowMonths      = row.periods * 12 / PERIODS[row.frequency];
     const timeSavedMonths = Math.round(monthlyMonths - rowMonths);
-    const timeSavedStr = row.frequency !== 'monthly' && timeSavedMonths > 0
+    const timeSavedStr   = row.frequency !== 'monthly' && timeSavedMonths > 0
       ? formatDuration(timeSavedMonths, 'monthly')
       : '—';
     const label = { monthly: 'Monthly', fortnightly: 'Fortnightly', weekly: 'Weekly' }[row.frequency];
@@ -324,23 +437,22 @@ function renderFrequencyTable(rows, selectedFreq) {
 
 function renderChart(yearlyData) {
   const canvas = $('mortgageChart');
-  if (mortgageChart) {
-    mortgageChart.destroy();
-    mortgageChart = null;
-  }
+  if (mortgageChart) { mortgageChart.destroy(); mortgageChart = null; }
 
-  const labels = yearlyData.map(r => `Yr ${r.year}`);
+  const isDark = document.documentElement.classList.contains('dark');
+  const balanceColor = isDark ? '#38bdf8' : '#0369a1';
+  const balanceFill  = isDark ? 'rgba(56,189,248,0.10)' : 'rgba(3,105,161,0.10)';
 
   mortgageChart = new Chart(canvas, {
     type: 'line',
     data: {
-      labels,
+      labels: yearlyData.map(r => `Yr ${r.year}`),
       datasets: [
         {
           label: 'Remaining Balance',
           data: yearlyData.map(r => r.balance),
-          borderColor: '#38bdf8',
-          backgroundColor: 'rgba(56,189,248,0.10)',
+          borderColor: balanceColor,
+          backgroundColor: balanceFill,
           fill: true,
           tension: 0.3,
           pointRadius: 0,
@@ -349,7 +461,7 @@ function renderChart(yearlyData) {
         {
           label: 'Cumulative Interest',
           data: yearlyData.map(r => r.cumulativeInterest),
-          borderColor: '#f59e0b',
+          borderColor: isDark ? '#f59e0b' : '#d97706',
           backgroundColor: 'transparent',
           fill: false,
           tension: 0.3,
@@ -363,27 +475,23 @@ function renderChart(yearlyData) {
       maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: {
-          labels: { color: '#94a3b8', boxWidth: 14, font: { size: 12 } },
-        },
+        legend: { labels: { color: '#94a3b8', boxWidth: 14, font: { size: 12 } } },
         tooltip: {
-          callbacks: {
-            label: ctx => ` ${ctx.dataset.label}: ${formatCurrency(ctx.parsed.y)}`,
-          },
+          callbacks: { label: ctx => ` ${ctx.dataset.label}: ${formatCurrency(ctx.parsed.y)}` },
         },
       },
       scales: {
         x: {
           ticks: { color: '#64748b', maxTicksLimit: 10, font: { size: 11 } },
-          grid: { color: 'rgba(51,65,85,0.5)' },
+          grid:  { color: 'rgba(51,65,85,0.5)' },
         },
         y: {
           ticks: {
             color: '#64748b',
-            font: { size: 11 },
+            font:  { size: 11 },
             callback: v => '$' + (v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : Math.round(v / 1000) + 'k'),
           },
-          grid: { color: 'rgba(51,65,85,0.5)' },
+          grid:    { color: 'rgba(51,65,85,0.5)' },
           afterFit: scale => { scale.width = 70; },
         },
       },
@@ -396,7 +504,7 @@ function renderChart(yearlyData) {
 function renderScheduleTable(schedule, frequency) {
   const SHOW_HEAD = 60;
   const SHOW_TAIL = 12;
-  const total = schedule.length;
+  const total     = schedule.length;
   const freqLabel = { monthly: 'Month', fortnightly: 'Fortnight', weekly: 'Week' }[frequency];
 
   let rows;
@@ -404,19 +512,12 @@ function renderScheduleTable(schedule, frequency) {
     rows = schedule;
     els.scheduleNote.textContent = '';
   } else {
-    rows = [
-      ...schedule.slice(0, SHOW_HEAD),
-      null, // gap marker
-      ...schedule.slice(total - SHOW_TAIL),
-    ];
-    els.scheduleNote.textContent =
-      `Showing first ${SHOW_HEAD} and last ${SHOW_TAIL} of ${total} periods`;
+    rows = [...schedule.slice(0, SHOW_HEAD), null, ...schedule.slice(total - SHOW_TAIL)];
+    els.scheduleNote.textContent = `Showing first ${SHOW_HEAD} and last ${SHOW_TAIL} of ${total} periods`;
   }
 
-  els.scheduleBody.innerHTML = rows.map((row, i) => {
-    if (row === null) {
-      return `<tr class="gap-row"><td colspan="5">· · ·</td></tr>`;
-    }
+  els.scheduleBody.innerHTML = rows.map(row => {
+    if (row === null) return `<tr class="gap-row"><td colspan="5">· · ·</td></tr>`;
     return `<tr>
       <td>${freqLabel} ${row.period}</td>
       <td>${formatCurrency(row.payment)}</td>

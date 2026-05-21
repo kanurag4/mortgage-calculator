@@ -4,7 +4,7 @@ A vanilla HTML/CSS/JS mortgage calculator for kashvector.com/mortgage/.
 
 ## Purpose
 
-Calculate Australian home loan repayments, total interest, and the impact of offset accounts and extra repayments. Supports P&I and Interest Only loan types, three repayment frequencies, and side-by-side frequency comparison.
+Calculate Australian home loan repayments, total interest, and the impact of offset accounts and extra repayments. Supports P&I and Interest Only loan types, three repayment frequencies, side-by-side frequency comparison, property purchase mode (LVR/LMI), and a rate stress test card.
 
 ## Tech Stack
 
@@ -17,7 +17,7 @@ Calculate Australian home loan repayments, total interest, and the impact of off
 ```
 www/
   index.html       ← UI (script load order: utils.js → calc/mortgage.js → Chart.js → app.js)
-  style.css        ← KashVector dark theme + mortgage-specific additions
+  style.css        ← KashVector dark theme + mortgage-specific additions + light mode overrides
   utils.js         ← formatCurrency, parseMoney, formatMoneyInput (pure, Node-testable)
   calc/
     mortgage.js    ← ALL calculation logic (pure functions, Node-testable)
@@ -35,11 +35,19 @@ tests/
 ## Design System
 
 From `C:\Projects\Rules\kashvector-design.md`:
+
+**Dark mode (default):**
 - bg `#0f172a`, card `#1e293b`, card-2 `#263248`
 - text `#f1f5f9`, muted `#94a3b8`, accent `#38bdf8`, border `#334155`
 - pass `#22c55e`, fail `#ef4444`, warn `#f59e0b`
-- Font: system-ui (vanilla tools)
-- localStorage key: `kv_mortgage_inputs`
+
+**Light mode (Slate Blue palette):**
+- bg `#edf2f7`, card `#d4dce8`, card-2 `#c5cfe0`
+- text `#0f172a`, muted `#64748b`, border `#e2e8f0`
+- accent `#0369a1` (navy blue — sky-700), warn `#d97706` (amber-600)
+
+Font: system-ui (vanilla tools)  
+localStorage key: `kv_mortgage_inputs`
 
 ## Calculation Logic
 
@@ -68,6 +76,39 @@ At IO→P&I transition: required P&I repayment is recomputed on the current bala
 ### Frequency comparison
 
 Table uses P&I, no extra repayments, but respects the offset balance. "Time saved" column compares each frequency to monthly using: `(monthlyPeriods / 12) − (rowPeriods / PERIODS[freq])` expressed as years/months.
+
+### Property Purchase mode
+
+When `inputMode === 'purchase'`, principal is derived from property price and deposit:
+```
+loan = max(propertyPrice - deposit, 0)
+LVR  = loan / propertyPrice × 100
+```
+LMI is required when LVR > 80%. Estimated via `estimateLMI(baseLoan, propertyPrice)` in `mortgage.js`.
+
+`renderPurchaseMode()` in `app.js` must be called **before** the `principal <= 0` early-return guard in `renderResults()` — so LVR/LMI display updates even when deposit ≥ property price.
+
+### Rate Stress Test
+
+`renderStressTest(inputs)` shows what the repayment would be at `annualRate + 0.03` (APRA +3% buffer), the extra per-period cost vs the current payment, and total interest at the stress rate.
+
+When `loanType === 'io'`, the baseline comparison uses the IO repayment (interest only on effective principal), not P&I:
+```js
+const effectivePrincipal = Math.max(inputs.principal - inputs.offsetBalance, 0);
+const baseAmt = inputs.loanType === 'io'
+  ? interestOnlyRepayment(effectivePrincipal, inputs.annualRate, inputs.frequency)
+  : repaymentAmount(inputs.principal, inputs.annualRate, inputs.years, inputs.frequency);
+```
+
+## Chart Theme Awareness
+
+The balance/interest chart selects colors based on the current theme at render time:
+```js
+const isDark = document.documentElement.classList.contains('dark');
+const balanceColor = isDark ? '#38bdf8' : '#0369a1';
+const interestColor = isDark ? '#f59e0b' : '#d97706';
+```
+This must be re-evaluated on every `renderResults()` call, not cached at startup.
 
 ## Running Tests
 

@@ -167,6 +167,19 @@ function formatDuration(periods, frequency) {
   return `${yrs} yr${yrs !== 1 ? 's' : ''} ${mo} mo`;
 }
 
+// Estimate LMI premium from LVR. Rates are indicative only — actual LMI varies by lender/insurer/loan size.
+function estimateLMI(loanAmount, propertyValue) {
+  if (!propertyValue || propertyValue <= 0 || !loanAmount || loanAmount <= 0) return 0;
+  const lvr = loanAmount / propertyValue;
+  if (lvr <= 0.80) return 0;
+  let rate;
+  if      (lvr <= 0.85) rate = 0.0065;
+  else if (lvr <= 0.90) rate = 0.0127;
+  else if (lvr <= 0.95) rate = 0.0243;
+  else                  rate = 0.0385;
+  return Math.round(loanAmount * rate);
+}
+
 if (typeof module !== 'undefined') module.exports = {
   PERIODS,
   repaymentAmount,
@@ -177,4 +190,5 @@ if (typeof module !== 'undefined') module.exports = {
   frequencyComparison,
   annualSummary,
   formatDuration,
+  estimateLMI,
 };
