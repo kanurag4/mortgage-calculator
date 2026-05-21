@@ -326,7 +326,7 @@ main {
   font-size: 0.78rem;
   color: var(--kv-text);
   white-space: pre-wrap;
-  width: 220px;
+  width: 250px;
   z-index: 20;
   line-height: 1.5;
   font-weight: 400;
