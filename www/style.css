@@ -437,7 +437,7 @@ html:not(.dark) .auto-tag {
 .freq-table td {
   text-align: right;
   padding: 10px 8px;
-  border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+  border-bottom: 1px solid rgba(34,48,82,0.5);
   color: var(--kv-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -525,7 +525,7 @@ details.card > summary .card-title {
 .schedule-table td {
   text-align: right;
   padding: 7px 10px;
-  border-bottom: 1px solid rgba(51, 65, 85, 0.4);
+  border-bottom: 1px solid rgba(34,48,82,0.4);
   color: var(--kv-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -663,8 +663,8 @@ footer a:hover {
 /* ── Rate stress test card ── */
 
 .stress-card {
-  background: rgba(245, 158, 11, 0.05);
-  border-color: rgba(245, 158, 11, 0.25);
+  background: rgba(249,115,22,0.05);
+  border-color: rgba(249,115,22,0.25);
 }
 
 .stress-badge {
@@ -675,8 +675,8 @@ footer a:hover {
   border-radius: 4px;
   margin-left: 6px;
   vertical-align: middle;
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: rgba(249,115,22,0.15);
+  border: 1px solid rgba(249,115,22,0.35);
   color: var(--kv-warn);
   letter-spacing: 0.3px;
 }
@@ -728,7 +728,7 @@ footer a:hover {
   font-size: 0.78rem;
   color: var(--kv-muted);
   line-height: 1.5;
-  border-top: 1px solid rgba(245, 158, 11, 0.15);
+  border-top: 1px solid rgba(249,115,22,0.15);
   padding-top: 10px;
   margin-top: 2px;
 }
