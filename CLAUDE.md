@@ -34,19 +34,19 @@ tests/
 
 ## Design System
 
-From `C:\Projects\Rules\kashvector-design.md`:
+From `C:\Projects\Rules\kashvector-design.md`. **Migrated to the "Ink & Amber" / "Paper & Ink" rebrand 2026-07-22** — see `Kashvector.md`'s "Ink & Amber rebrand — rollout status" section (in `C:\Projects\StockAnalysis`) for the full token table and rollout tracker across all KashVector tools.
 
-**Dark mode (default):**
-- bg `#0f172a`, card `#1e293b`, card-2 `#263248`
-- text `#f1f5f9`, muted `#94a3b8`, accent `#38bdf8`, border `#334155`
-- pass `#22c55e`, fail `#ef4444`, warn `#f59e0b`
+**Dark mode "Ink & Amber" (default):**
+- bg `#0b1120`, card `#111a30`, card-2 `#182342`
+- text `#f5f7fc`, muted `#93a0bd`, accent `#f5a623`, border `#223052`
+- pass `#22c55e`, fail `#ef4444`, warn `#f97316`
 
-**Light mode (Slate Blue palette):**
-- bg `#edf2f7`, card `#d4dce8`, card-2 `#c5cfe0`
-- text `#0f172a`, muted `#64748b`, border `#e2e8f0`
-- accent `#0369a1` (navy blue — sky-700), warn `#d97706` (amber-600)
+**Light mode "Paper & Ink":**
+- bg `#faf8f4`, card `#ffffff`, card-2 `#f1ede4`
+- text `#16202b`, muted `#4d5c6b`, border `#e7e2d8`
+- accent `#1a3a5f` (dark navy — inverts with dark mode's amber), warn `#b45309`
 
-Font: system-ui (vanilla tools)  
+Font: Carlito (Google Fonts), base body font-size bumped ~0.5px (15→15.5px), `font-variant-numeric: tabular-nums`, `-webkit-font-smoothing: antialiased`.
 localStorage key: `kv_mortgage_inputs`
 
 ## Calculation Logic
@@ -105,10 +105,10 @@ const baseAmt = inputs.loanType === 'io'
 The balance/interest chart selects colors based on the current theme at render time:
 ```js
 const isDark = document.documentElement.classList.contains('dark');
-const balanceColor = isDark ? '#38bdf8' : '#0369a1';
-const interestColor = isDark ? '#f59e0b' : '#d97706';
+const balanceColor = isDark ? '#f5a623' : '#1a3a5f';
+const interestColor = isDark ? '#f97316' : '#b45309';
 ```
-This must be re-evaluated on every `renderResults()` call, not cached at startup.
+This must be re-evaluated on every `renderResults()` call, not cached at startup. Colors match the Ink & Amber accent/warn tokens above — update both together if the palette changes again.
 
 ## Running Tests
 

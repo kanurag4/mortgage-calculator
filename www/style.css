@@ -1,25 +1,28 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --kv-bg:      #0f172a;
-  --kv-card:    #1e293b;
-  --kv-card-2:  #263248;
-  --kv-text:    #f1f5f9;
-  --kv-muted:   #94a3b8;
-  --kv-border:  #334155;
-  --kv-accent:  #38bdf8;
+  --kv-bg:      #0b1120;
+  --kv-card:    #111a30;
+  --kv-card-2:  #182342;
+  --kv-text:    #f5f7fc;
+  --kv-muted:   #93a0bd;
+  --kv-border:  #223052;
+  --kv-accent:  #f5a623;
   --kv-pass:    #22c55e;
   --kv-fail:    #ef4444;
-  --kv-warn:    #f59e0b;
+  --kv-warn:    #f97316;
 }
 
 body {
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: 'Carlito', system-ui, -apple-system, sans-serif;
   background: var(--kv-bg);
   color: var(--kv-text);
   min-height: 100vh;
-  font-size: 15px;
+  font-size: 15.5px;
   line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ── Header ── */
@@ -30,30 +33,6 @@ body {
   position: relative;
   text-align: center;
 }
-
-.home-logo {
-  position: absolute;
-  top: 12px;
-  left: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  text-decoration: none;
-}
-
-.home-logo img { width: 32px; height: 32px; opacity: 0.9; display: block; transition: opacity 0.15s; }
-.home-logo:hover img { opacity: 1; }
-
-.home-logo-label {
-  font-size: 0.6rem;
-  font-weight: 500;
-  letter-spacing: 0.03em;
-  color: var(--kv-muted);
-  transition: color 0.15s;
-  white-space: nowrap;
-}
-.home-logo:hover .home-logo-label { color: var(--kv-accent); }
 
 .app-header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
 .app-header > p { color: var(--kv-muted); font-size: 0.88rem; margin-top: 4px; }
@@ -75,42 +54,17 @@ body {
   color: var(--kv-pass);
 }
 
-/* ── Theme toggle ── */
-
-.theme-toggle {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid var(--kv-border);
-  background: var(--kv-card);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--kv-muted);
-  font-size: 0.9rem;
-  transition: background 0.15s, border-color 0.15s;
-}
-.theme-toggle:hover {
-  background: var(--kv-card-2);
-  border-color: var(--kv-accent);
-  color: var(--kv-text);
-}
-
 /* ── Light mode overrides ── */
 
 html:not(.dark) {
-  --kv-bg:     #edf2f7;
-  --kv-card:   #d4dce8;
-  --kv-card-2: #c5cfe0;
-  --kv-text:   #0f172a;
-  --kv-muted:  #64748b;
-  --kv-border: #e2e8f0;
-  --kv-accent: #0369a1;
-  --kv-warn:   #d97706;
+  --kv-bg:     #faf8f4;
+  --kv-card:   #ffffff;
+  --kv-card-2: #f1ede4;
+  --kv-text:   #16202b;
+  --kv-muted:  #4d5c6b;
+  --kv-border: #e7e2d8;
+  --kv-accent: #1a3a5f;
+  --kv-warn:   #b45309;
 }
 
 /* ── Layout ── */
@@ -269,7 +223,7 @@ main {
 
 .toggle-btn.active {
   background: var(--kv-accent);
-  color: #0f172a;
+  color: var(--kv-bg);
   font-weight: 600;
 }
 
@@ -290,6 +244,35 @@ main {
   color: var(--kv-accent);
   min-height: 1.1em;
 }
+
+/* ── Auto-tag & reset button (stamp duty override pattern) ── */
+
+.auto-tag {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: rgba(245, 166, 35, 0.12);
+  color: var(--kv-accent);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+html:not(.dark) .auto-tag {
+  background: rgba(26, 58, 95, 0.1);
+}
+
+.reset-btn {
+  background: transparent;
+  border: none;
+  color: var(--kv-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0 10px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.reset-btn:hover { color: var(--kv-accent); }
 
 .derived-savings {
   font-size: 0.8rem;
@@ -617,19 +600,6 @@ details.card > summary .card-title {
   letter-spacing: 0.3px;
 }
 
-/* ── Cross-tool nav ── */
-
-.kv-tool-nav { display: flex; justify-content: center; overflow-x: auto; border-bottom: 1px solid var(--kv-border); background: var(--kv-bg); padding: 0 16px; scrollbar-width: none; }
-.kv-tool-nav::-webkit-scrollbar { display: none; }
-.kv-tool-nav a { flex-shrink: 0; padding: 10px 14px; font-size: 0.82rem; font-weight: 500; color: var(--kv-muted); text-decoration: none; border-bottom: 2px solid transparent; white-space: nowrap; transition: color 0.15s; }
-.kv-tool-nav a:hover { color: var(--kv-text); }
-.kv-tool-nav a.kv-nav-active { color: var(--kv-accent); border-bottom-color: var(--kv-accent); }
-html:not(.dark) .kv-tool-nav { background: #edf2f7; border-color: #e2e8f0; }
-html:not(.dark) .kv-tool-nav a { color: #64748b; }
-html:not(.dark) .kv-tool-nav a:hover { color: #0f172a; }
-html:not(.dark) .kv-tool-nav a.kv-nav-active { color: #0369a1; border-bottom-color: #0369a1; }
-@media (max-width: 800px) { .kv-tool-nav { justify-content: flex-start; } }
-
 /* ── Footer ── */
 
 footer {
@@ -637,7 +607,7 @@ footer {
   margin: 0 auto;
   padding: 24px;
   font-size: 0.8rem;
-  color: #475569;
+  color: var(--kv-muted);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -777,3 +747,75 @@ footer a:hover {
   .table-wrap { overflow: visible; }
   .results-panel { display: block; }
 }
+
+/* ── Copy scenario link button ── */
+.kv-copy-link-btn {
+  align-self: flex-start;
+  background: color-mix(in srgb, var(--kv-accent) 14%, var(--kv-card));
+  border: 1px solid var(--kv-accent);
+  color: var(--kv-accent);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--kv-accent) 25%, transparent);
+  transition: background 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+.kv-copy-link-btn:hover {
+  background: var(--kv-accent);
+  color: var(--kv-bg);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px color-mix(in srgb, var(--kv-accent) 40%, transparent);
+}
+.kv-copy-link-btn.copied {
+  background: color-mix(in srgb, var(--kv-pass) 14%, var(--kv-card));
+  color: var(--kv-pass);
+  border-color: var(--kv-pass);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--kv-pass) 25%, transparent);
+}
+
+/* ── Profile pre-fill chip ── */
+.kv-prefill-chip {
+  font-size: 0.78rem;
+  color: var(--kv-accent);
+  margin-top: 4px;
+}
+.kv-prefill-chip button {
+  background: none;
+  border: none;
+  color: var(--kv-accent);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.78rem;
+  padding: 0;
+}
+
+/* ── Cross-tool next-step suggestion card ── */
+.kv-suggestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: var(--kv-card-2);
+  border: 1px solid var(--kv-accent);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--kv-text);
+  font-size: 0.88rem;
+  transition: background 0.15s;
+}
+.kv-suggestion:hover { background: var(--kv-card); }
+.kv-suggestion-arrow { color: var(--kv-accent); flex-shrink: 0; }
+.kv-suggestion-close {
+  background: none;
+  border: none;
+  color: var(--kv-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.kv-suggestion-close:hover { color: var(--kv-text); }

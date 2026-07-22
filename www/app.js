@@ -25,6 +25,12 @@ const DEFAULTS = {
   extraPerPeriod:'0',
 };
 
+const FIELD_MAP = {
+  loanAmount:    { param: 'b', profileKey: 'mortgageBalance' },
+  annualRate:    { param: 'r', profileKey: 'mortgageRate' },
+  propertyState: { param: 's', profileKey: 'state' },
+};
+
 const els = {
   // Mode toggle
   inputModeToggle:     $('inputModeToggle'),
@@ -85,14 +91,106 @@ let inputMode   = 'loan';
 let stampManual = false;
 let mortgageChart = null;
 let debounceTimer = null;
+let scenarioParamsApplied = false;
+
+// Tracks which shared-profile fields the user has genuinely edited in this
+// session. Only touched fields are pushed to the shared profile in
+// saveToStorage() — this prevents an untouched, still-at-default field (e.g.
+// propertyState left at 'NSW') from clobbering a value another tool
+// legitimately wrote to the shared profile. Set to true only inside real
+// user-input event handlers below — never during loadFromStorage,
+// applyScenarioParams, or applyProfilePrefill, which apply values
+// programmatically rather than via genuine user interaction.
+const touchedProfileFields = { mortgageBalance: false, mortgageRate: false, state: false };
+
+const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 
 loadFromStorage();
+applyScenarioParams();
+applyProfilePrefill();
 bindEvents();
 renderResults();
+if (!isNative) {
+  bindCopyLinkButton();
+} else {
+  const copyLinkBtn = document.getElementById('copyLinkBtn');
+  if (copyLinkBtn) copyLinkBtn.style.display = 'none';
+}
+
+// ── Cross-tool scenario links & profile pre-fill ───────────────────────────────
+
+function applyScenarioParams() {
+  if (isNative || !window.kvScenario) return;
+  const params = window.kvScenario.readParams(FIELD_MAP);
+  if (Object.keys(params).length === 0) return;
+  if (params.loanAmount) {
+    els.loanAmount.value = params.loanAmount;
+    inputMode = 'loan';
+    applyInputMode();
+  }
+  if (params.annualRate)    els.annualRate.value    = params.annualRate;
+  if (params.propertyState) els.propertyState.value = params.propertyState;
+  scenarioParamsApplied = true;
+}
+
+function applyProfilePrefill() {
+  if (isNative || !window.kvScenario || scenarioParamsApplied) return;
+  const savedExists = !!localStorage.getItem(STORAGE_KEY);
+  if (savedExists) return; // tool's own saved value always wins
+  const profile = window.kvScenario.getProfile();
+  let prefilled = false;
+  if (profile.fields.mortgageBalance) {
+    els.loanAmount.value = String(profile.fields.mortgageBalance);
+    inputMode = 'loan';
+    applyInputMode();
+    prefilled = true;
+  }
+  if (profile.fields.mortgageRate) {
+    els.annualRate.value = String(profile.fields.mortgageRate);
+    prefilled = true;
+  }
+  if (profile.fields.state) {
+    els.propertyState.value = profile.fields.state;
+    prefilled = true;
+  }
+  if (prefilled) showPrefillChip();
+}
+
+function showPrefillChip() {
+  const chip = document.createElement('div');
+  chip.className = 'kv-prefill-chip';
+  chip.innerHTML = 'Pre-filled from your other tools · <button type="button" id="clearPrefillBtn">clear</button>';
+  els.loanAmount.parentElement.insertAdjacentElement('afterend', chip);
+  document.getElementById('clearPrefillBtn').addEventListener('click', function () {
+    els.loanAmount.value    = DEFAULTS.loanAmount;
+    els.annualRate.value    = DEFAULTS.annualRate;
+    els.propertyState.value = DEFAULTS.propertyState;
+    chip.remove();
+    saveLocalOnly();
+    renderResults();
+  });
+}
+
+function bindCopyLinkButton() {
+  const btn = document.getElementById('copyLinkBtn');
+  if (!btn) return;
+  btn.addEventListener('click', function () {
+    const getValue = (inputId) => els[inputId] ? els[inputId].value : '';
+    const link = window.kvScenario.buildLink(FIELD_MAP, getValue);
+    navigator.clipboard.writeText(link).then(function () {
+      btn.textContent = '✓ Copied!';
+      btn.classList.add('copied');
+      setTimeout(function () {
+        btn.textContent = '🔗 Create link to share this scenario';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  });
+}
 
 // ── Storage ───────────────────────────────────────────────────────────────────
 
-function saveToStorage() {
+function saveLocalOnly() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       inputMode,
@@ -112,6 +210,20 @@ function saveToStorage() {
       extraPerPeriod: els.extraPerPeriod.value,
     }));
   } catch (_) {}
+}
+
+function saveToStorage() {
+  saveLocalOnly();
+
+  if (window.kvScenario && !isNative) {
+    const profileUpdate = {};
+    if (touchedProfileFields.mortgageBalance) profileUpdate.mortgageBalance = parseMoney(els.loanAmount);
+    if (touchedProfileFields.mortgageRate)    profileUpdate.mortgageRate = parseFloat(els.annualRate.value) || undefined;
+    if (touchedProfileFields.state)           profileUpdate.state = els.propertyState.value;
+    if (Object.keys(profileUpdate).length > 0) {
+      window.kvScenario.saveProfile(profileUpdate);
+    }
+  }
 }
 
 function loadFromStorage() {
@@ -195,6 +307,7 @@ function applyInputMode() {
 function bindEvents() {
   [els.loanAmount, els.offsetBalance, els.extraPerPeriod, els.depositAmount].forEach(el => {
     el.addEventListener('input', () => {
+      if (el === els.loanAmount) touchedProfileFields.mortgageBalance = true;
       formatMoneyInput(el);
       saveToStorage();
       scheduleRender();
@@ -209,6 +322,7 @@ function bindEvents() {
   });
 
   els.propertyState.addEventListener('change', () => {
+    touchedProfileFields.state = true;
     autoCalcStampDuty();
     saveToStorage();
     scheduleRender();
@@ -219,6 +333,7 @@ function bindEvents() {
 
   [els.annualRate, els.loanTermYears, els.ioPeriodYears].forEach(el => {
     el.addEventListener('input', () => {
+      if (el === els.annualRate) touchedProfileFields.mortgageRate = true;
       saveToStorage();
       scheduleRender();
     });
@@ -296,7 +411,10 @@ function getInputs() {
 function renderResults() {
   const inputs = getInputs();
   renderPurchaseMode();
-  if (!inputs.principal || inputs.principal <= 0 || inputs.years <= 0) return;
+  if (!inputs.principal || inputs.principal <= 0 || inputs.years <= 0) {
+    renderNextStepSuggestion(inputs.principal);
+    return;
+  }
 
   const schedule   = buildSchedule(inputs);
   const summary    = computeSummary(schedule, inputs.principal);
@@ -315,6 +433,38 @@ function renderResults() {
   renderFrequencyTable(freqRows, inputs.frequency);
   renderChart(yearlyData);
   renderScheduleTable(schedule, inputs.frequency);
+  renderNextStepSuggestion(inputs.principal);
+}
+
+// ── Next-step suggestion: Mortgage → Debt Recycling ────────────────────────────
+
+function renderNextStepSuggestion(loanAmount) {
+  const container = document.getElementById('nextStepSuggestion');
+  if (!container || isNative || !window.kvScenario) return;
+
+  if (!loanAmount || loanAmount <= 0) { container.innerHTML = ''; return; }
+
+  const debtRecyclingFieldMap = {
+    loanBalance:   { param: 'b' },
+    interestRate:  { param: 'r' },
+    propertyState: { param: 's' },
+  };
+  const getValue = (inputId) => ({
+    loanBalance:   String(loanAmount),
+    interestRate:  els.annualRate.value,
+    propertyState: els.propertyState.value,
+  }[inputId]);
+  const href = window.kvScenario.buildLink(
+    debtRecyclingFieldMap,
+    getValue,
+    location.origin + '/debt-recycling/'
+  );
+
+  window.kvScenario.renderSuggestion(container, {
+    text: 'Curious what debt recycling could do with your equity? See it modelled with your numbers',
+    href,
+    dismissKey: 'mortgage:debt-recycling',
+  });
 }
 
 // ── Purchase mode derived display ─────────────────────────────────────────────
@@ -521,8 +671,8 @@ function renderChart(yearlyData) {
   if (mortgageChart) { mortgageChart.destroy(); mortgageChart = null; }
 
   const isDark = document.documentElement.classList.contains('dark');
-  const balanceColor = isDark ? '#38bdf8' : '#0369a1';
-  const balanceFill  = isDark ? 'rgba(56,189,248,0.10)' : 'rgba(3,105,161,0.10)';
+  const balanceColor = isDark ? '#f5a623' : '#1a3a5f';
+  const balanceFill  = isDark ? 'rgba(245,166,35,0.10)' : 'rgba(26,58,95,0.10)';
 
   mortgageChart = new Chart(canvas, {
     type: 'line',
@@ -542,7 +692,7 @@ function renderChart(yearlyData) {
         {
           label: 'Cumulative Interest',
           data: yearlyData.map(r => r.cumulativeInterest),
-          borderColor: isDark ? '#f59e0b' : '#d97706',
+          borderColor: isDark ? '#f97316' : '#b45309',
           backgroundColor: 'transparent',
           fill: false,
           tension: 0.3,
@@ -556,23 +706,23 @@ function renderChart(yearlyData) {
       maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { labels: { color: '#94a3b8', boxWidth: 14, font: { size: 12 } } },
+        legend: { labels: { color: '#93a0bd', boxWidth: 14, font: { size: 12 } } },
         tooltip: {
           callbacks: { label: ctx => ` ${ctx.dataset.label}: ${formatCurrency(ctx.parsed.y)}` },
         },
       },
       scales: {
         x: {
-          ticks: { color: '#64748b', maxTicksLimit: 10, font: { size: 11 } },
-          grid:  { color: 'rgba(51,65,85,0.5)' },
+          ticks: { color: '#93a0bd', maxTicksLimit: 10, font: { size: 11 } },
+          grid:  { color: 'rgba(34,48,82,0.5)' },
         },
         y: {
           ticks: {
-            color: '#64748b',
+            color: '#93a0bd',
             font:  { size: 11 },
             callback: v => '$' + (v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : Math.round(v / 1000) + 'k'),
           },
-          grid:    { color: 'rgba(51,65,85,0.5)' },
+          grid:    { color: 'rgba(34,48,82,0.5)' },
           afterFit: scale => { scale.width = 70; },
         },
       },
